@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+## useDataTable Hook
 
-## Getting Started
+This project includes a custom `useDataTable` hook (`src/app/_hooks/useDataTable.tsx`) for managing complex data table selection states with support for "select all" functionality across large datasets.
 
-First, run the development server:
+### Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- ✅ Select/deselect individual rows
+- ✅ Select all functionality with exclusion tracking
+- ✅ Efficient handling of large datasets
+- ✅ Multi-state selection (all, some, none)
+- ✅ TypeScript support with generics
+
+### Usage
+
+```tsx
+import useDataTable from "@/app/_hooks/useDataTable";
+
+const MyDataTable = () => {
+  const currentPageData = [
+    { id: "1", name: "Item 1" },
+    { id: "2", name: "Item 2" },
+    // ... more data
+  ];
+  const totalRecords = 1000; // Total records in the dataset
+
+  const { selectAll, selectRow, isActive, selectStatus, getData } =
+    useDataTable({
+      currentPageData,
+      totalRecords,
+    });
+
+  return (
+    <div>
+      {/* Select All Checkbox */}
+      <input
+        type="checkbox"
+        checked={selectStatus === "all"}
+        ref={(el) => {
+          if (el) el.indeterminate = selectStatus === "some";
+        }}
+        onChange={selectAll}
+      />
+
+      {/* Data Rows */}
+      {currentPageData.map((item) => (
+        <div key={item.id}>
+          <input
+            type="checkbox"
+            checked={isActive(item.id)}
+            onChange={() => selectRow(item.id)}
+          />
+          {item.name}
+        </div>
+      ))}
+
+      {/* Get Selected Data */}
+      <button onClick={() => console.log(getData())}>Get Selection Data</button>
+    </div>
+  );
+};
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### API Reference
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### Parameters
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Parameter         | Type     | Description                                     |
+| ----------------- | -------- | ----------------------------------------------- |
+| `currentPageData` | `T[]`    | Array of current page data items                |
+| `totalRecords`    | `number` | Total number of records in the complete dataset |
 
-## Learn More
+#### Return Values
 
-To learn more about Next.js, take a look at the following resources:
+| Property       | Type                      | Description                                              |
+| -------------- | ------------------------- | -------------------------------------------------------- |
+| `selectAll`    | `() => void`              | Toggle select all state                                  |
+| `selectRow`    | `(id: string) => void`    | Toggle selection state of a specific row                 |
+| `isActive`     | `(id: string) => boolean` | Check if a row is selected                               |
+| `selectStatus` | `SelectStatus`            | Current selection status: `'all'`, `'some'`, or `'none'` |
+| `getData`      | `() => SelectionData`     | Get current selection data                               |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+#### Types
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```tsx
+type SelectStatus = "all" | "some" | "none";
 
-## Deploy on Vercel
+type SelectionData = {
+  all: boolean; // True if "select all" is active
+  exclude: string[]; // Array of excluded row IDs (when all=true)
+  select: string[]; // Array of selected row IDs (when all=false)
+};
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### How It Works
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The hook uses an intelligent selection strategy:
+
+1. **Individual Selection Mode**: When `isSelectAll` is `false`, it tracks selected rows in `rowSelect` set
+2. **Select All Mode**: When `isSelectAll` is `true`, it assumes all rows are selected and tracks excluded rows in `rowExclude` set
+
+This approach efficiently handles large datasets by avoiding the need to store thousands of selected row IDs when "select all" is used.
