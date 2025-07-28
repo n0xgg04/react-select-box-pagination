@@ -1,103 +1,225 @@
-import Image from "next/image";
+"use client";
+
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import Row from "./_components/Row";
+import TableMain from "./_components/TableBody";
+import generatePaginationRange from "./_utils/generatePage";
+import React from "react";
+import TableMainHeader from "./_components/TableHeader";
+import PerPageOption from "./_components/PerPageOption";
+
+const fetchCustomers = async (
+  page: number,
+  perPage: number
+): Promise<ApiResponse> => {
+  const response = await fetch(`/api/data?page=${page}&perPage=${perPage}`);
+  if (!response.ok) {
+    throw new Error("Network response was not ok");
+  }
+  return response.json();
+};
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [currentPage, setCurrentPage] = useState(1);
+  const [perPage, setPerPage] = useState(10);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["customers", currentPage, perPage],
+    queryFn: () => fetchCustomers(currentPage, perPage),
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePerPageChange = (newPerPage: number) => {
+    setPerPage(newPerPage);
+    setCurrentPage(1);
+  };
+
+  const [selectStatus, setSelectStatus] = useState<"all" | "none">("none");
+  const [rowSelect, setRowSelect] = useState<Set<string>>(new Set());
+  const [rowExclude, setRowExclude] = useState<Set<string>>(new Set());
+
+  const onChangeSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectStatus(e.target.checked ? "all" : "none");
+  };
+
+  const handleSelectRow = React.useCallback(
+    (customerId: string, checked: boolean) => {
+      if (selectStatus === "all") {
+        setRowExclude((pre) => {
+          const newSet = new Set(pre);
+          if (newSet.has(customerId)) {
+            newSet.delete(customerId);
+          } else {
+            newSet.add(customerId);
+          }
+          return newSet;
+        });
+        return;
+      }
+      setRowSelect((pre) => {
+        const newSet = new Set(pre);
+        if (checked) {
+          newSet.add(customerId);
+        } else {
+          newSet.delete(customerId);
+        }
+        return newSet;
+      });
+    },
+    [selectStatus]
+  );
+
+  const customers = React.useMemo(() => data?.data || [], [data]);
+  const totalPages = data?.totalPages || 0;
+  const totalCustomers = data?.totalCustomers || 0;
+  const paginationRange = React.useMemo(
+    () => generatePaginationRange(currentPage, totalPages),
+    [currentPage, totalPages]
+  );
+
+  const rowExcludeKey = React.useMemo(
+    () => Array.from(rowExclude).sort().join(","),
+    [rowExclude]
+  );
+
+  const rowSelectKey = React.useMemo(
+    () => Array.from(rowSelect).sort().join(","),
+    [rowSelect]
+  );
+
+  const shouldActive = React.useMemo(() => {
+    return (customerId: string) => {
+      if (selectStatus === "all") {
+        return !rowExclude.has(customerId);
+      }
+      return rowSelect.has(customerId);
+    };
+  }, [selectStatus, rowExcludeKey, rowSelectKey, rowExclude, rowSelect]);
+
+  useEffect(() => {
+    console.log("shouldActive is re");
+  }, [shouldActive]);
+
+  const isSelectAll = React.useMemo(() => {
+    return selectStatus === "all";
+  }, [selectStatus]);
+
+  useEffect(() => {
+    console.log("Select", rowSelect);
+  }, [rowSelect]);
+
+  useEffect(() => {
+    console.log("Exclude", rowExclude);
+  }, [rowExclude]);
+
+  useEffect(() => {
+    console.log("customers", customers);
+  }, [customers]);
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold mb-2">Customer Management</h1>
+        <div className="flex items-center justify-between">
+          <p className="text-gray-600">
+            {isLoading
+              ? "Loading..."
+              : `Showing ${customers.length} of ${totalCustomers} customers`}
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+      </div>
+
+      <div className="mb-4 flex items-center gap-4">
+        <PerPageOption
+          perPage={perPage}
+          handlePerPageChange={handlePerPageChange}
+          isLoading={isLoading}
+        />
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableMainHeader
+            isSelectAll={isSelectAll}
+            isLoading={isLoading}
+            onChangeSelectAll={onChangeSelectAll}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
+          <TableMain
+            isLoading={isLoading}
+            isError={isError}
+            error={error}
+            customers={customers}
+            handleSelectRow={handleSelectRow}
+            shouldActive={shouldActive}
           />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        </Table>
+      </div>
+
+      <div className="flex items-center justify-between space-x-2 py-4">
+        <div className="text-sm text-gray-500">
+          {isLoading
+            ? "Loading..."
+            : `Page ${currentPage} of ${totalPages} (${totalCustomers} total items)`}
+        </div>
+        <div className="flex items-center space-x-2">
+          <button
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1 || isLoading}
+          >
+            Previous
+          </button>
+
+          {paginationRange.map((page, index) => {
+            if (page === "...") {
+              return (
+                <span
+                  key={`ellipsis-${index}`}
+                  className="px-3 py-1 text-sm text-gray-500"
+                >
+                  ...
+                </span>
+              );
+            }
+
+            return (
+              <button
+                key={page}
+                className={`px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
+                  currentPage === page
+                    ? "bg-blue-500 text-white hover:bg-blue-600"
+                    : ""
+                }`}
+                onClick={() => handlePageChange(page as number)}
+                disabled={isLoading}
+              >
+                {page}
+              </button>
+            );
+          })}
+
+          <button
+            className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= totalPages || isLoading}
+          >
+            Next
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
