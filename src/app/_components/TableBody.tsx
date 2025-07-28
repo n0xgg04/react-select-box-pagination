@@ -17,26 +17,6 @@ const TableMain = React.memo(function TableMain({
   shouldActive: (customerId: string) => boolean;
   handleSelectRow: (customerId: string, checked: boolean) => void;
 }) {
-  useEffect(() => {
-    console.log("isLoading changed");
-  }, [isLoading]);
-
-  useEffect(() => {
-    console.log("isError changed");
-  }, [isError]);
-
-  useEffect(() => {
-    console.log("customers changed");
-  }, [customers]);
-
-  useEffect(() => {
-    console.log("shouldActive changed");
-  }, [shouldActive]);
-
-  useEffect(() => {
-    console.log("handleSelectRow changed");
-  }, [handleSelectRow]);
-
   return (
     <TableBody>
       {isLoading ? (

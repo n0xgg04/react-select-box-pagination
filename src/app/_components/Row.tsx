@@ -1,5 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
-import React from "react";
+import React, { useMemo } from "react";
+import TableCellMemo from "./CeilMemo";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const Row = React.memo(function Row({
   customer,
@@ -10,27 +12,31 @@ const Row = React.memo(function Row({
   shouldActive: boolean;
   handleSelectRow: (customerId: string, checked: boolean) => void;
 }) {
+  const customerName = useMemo(
+    () => `${customer.firstName} ${customer.lastName}`,
+    [customer.firstName, customer.lastName]
+  );
+
+  const cityCountry = useMemo(
+    () => `${customer.city}, ${customer.country}`,
+    [customer.city, customer.country]
+  );
+
   return (
     <TableRow key={customer.id}>
-      <TableCell>
-        <input
-          type="checkbox"
+      <TableCellMemo>
+        <Checkbox
           checked={shouldActive}
-          onChange={(e) => handleSelectRow(customer.id, e.target.checked)}
-          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+          onCheckedChange={() => handleSelectRow(customer.id, !shouldActive)}
         />
-      </TableCell>
-      <TableCell className="font-medium">{customer.id}</TableCell>
-      <TableCell>
-        {customer.firstName} {customer.lastName}
-      </TableCell>
-      <TableCell>{customer.company}</TableCell>
-      <TableCell>
-        {customer.city}, {customer.country}
-      </TableCell>
-      <TableCell>{customer.email}</TableCell>
-      <TableCell>{customer.phone1}</TableCell>
-      <TableCell>{customer.registrationDate}</TableCell>
+      </TableCellMemo>
+      <TableCellMemo>{customer.id}</TableCellMemo>
+      <TableCellMemo>{customerName}</TableCellMemo>
+      <TableCellMemo>{customer.company}</TableCellMemo>
+      <TableCellMemo>{cityCountry}</TableCellMemo>
+      <TableCellMemo>{customer.email}</TableCellMemo>
+      <TableCellMemo>{customer.phone1}</TableCellMemo>
+      <TableCellMemo>{customer.registrationDate}</TableCellMemo>
     </TableRow>
   );
 });

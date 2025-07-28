@@ -1,25 +1,31 @@
+import { Checkbox } from "@/components/ui/checkbox";
 import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import React from "react";
+import { SelectStatus } from "../_hooks/useDataTable";
 
 const TableMainHeader = React.memo(function TableMainHeader({
-  isSelectAll,
+  selectStatus,
   isLoading,
   onChangeSelectAll,
 }: {
-  isSelectAll: boolean;
+  selectStatus: SelectStatus;
   isLoading: boolean;
-  onChangeSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onChangeSelectAll: () => void;
 }) {
   return (
     <TableHeader>
       <TableRow>
         <TableHead className="w-[50px]">
-          <input
-            type="checkbox"
-            checked={isSelectAll}
+          <Checkbox
+            checked={
+              selectStatus === "all"
+                ? true
+                : selectStatus === "none"
+                ? false
+                : "indeterminate"
+            }
+            onCheckedChange={onChangeSelectAll}
             disabled={isLoading}
-            onChange={onChangeSelectAll}
-            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
           />
         </TableHead>
         <TableHead>ID</TableHead>

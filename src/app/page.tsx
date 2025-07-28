@@ -16,6 +16,9 @@ import generatePaginationRange from "./_utils/generatePage";
 import React from "react";
 import TableMainHeader from "./_components/TableHeader";
 import PerPageOption from "./_components/PerPageOption";
+import useDataTable from "./_hooks/useDataTable";
+import { Button } from "@/components/ui/button";
+import Pagnation from "./_components/Pagnation";
 
 const fetchCustomers = async (
   page: number,
@@ -38,49 +41,20 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  const { selectAll, selectRow, isActive, selectStatus, getData } =
+    useDataTable({
+      currentPageData: data?.data || [],
+      totalRecords: data?.totalCustomers || 0,
+    });
 
-  const handlePerPageChange = (newPerPage: number) => {
+  const handlePageChange = React.useCallback((page: number) => {
+    setCurrentPage(page);
+  }, []);
+
+  const handlePerPageChange = React.useCallback((newPerPage: number) => {
     setPerPage(newPerPage);
     setCurrentPage(1);
-  };
-
-  const [selectStatus, setSelectStatus] = useState<"all" | "none">("none");
-  const [rowSelect, setRowSelect] = useState<Set<string>>(new Set());
-  const [rowExclude, setRowExclude] = useState<Set<string>>(new Set());
-
-  const onChangeSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectStatus(e.target.checked ? "all" : "none");
-  };
-
-  const handleSelectRow = React.useCallback(
-    (customerId: string, checked: boolean) => {
-      if (selectStatus === "all") {
-        setRowExclude((pre) => {
-          const newSet = new Set(pre);
-          if (newSet.has(customerId)) {
-            newSet.delete(customerId);
-          } else {
-            newSet.add(customerId);
-          }
-          return newSet;
-        });
-        return;
-      }
-      setRowSelect((pre) => {
-        const newSet = new Set(pre);
-        if (checked) {
-          newSet.add(customerId);
-        } else {
-          newSet.delete(customerId);
-        }
-        return newSet;
-      });
-    },
-    [selectStatus]
-  );
+  }, []);
 
   const customers = React.useMemo(() => data?.data || [], [data]);
   const totalPages = data?.totalPages || 0;
@@ -90,44 +64,9 @@ export default function Home() {
     [currentPage, totalPages]
   );
 
-  const rowExcludeKey = React.useMemo(
-    () => Array.from(rowExclude).sort().join(","),
-    [rowExclude]
-  );
-
-  const rowSelectKey = React.useMemo(
-    () => Array.from(rowSelect).sort().join(","),
-    [rowSelect]
-  );
-
-  const shouldActive = React.useMemo(() => {
-    return (customerId: string) => {
-      if (selectStatus === "all") {
-        return !rowExclude.has(customerId);
-      }
-      return rowSelect.has(customerId);
-    };
-  }, [selectStatus, rowExcludeKey, rowSelectKey, rowExclude, rowSelect]);
-
-  useEffect(() => {
-    console.log("shouldActive is re");
-  }, [shouldActive]);
-
-  const isSelectAll = React.useMemo(() => {
-    return selectStatus === "all";
-  }, [selectStatus]);
-
-  useEffect(() => {
-    console.log("Select", rowSelect);
-  }, [rowSelect]);
-
-  useEffect(() => {
-    console.log("Exclude", rowExclude);
-  }, [rowExclude]);
-
-  useEffect(() => {
-    console.log("customers", customers);
-  }, [customers]);
+  const handleGetData = React.useCallback(() => {
+    alert(JSON.stringify(getData()));
+  }, [getData]);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -153,17 +92,17 @@ export default function Home() {
       <div className="rounded-md border">
         <Table>
           <TableMainHeader
-            isSelectAll={isSelectAll}
+            selectStatus={selectStatus}
             isLoading={isLoading}
-            onChangeSelectAll={onChangeSelectAll}
+            onChangeSelectAll={selectAll}
           />
           <TableMain
             isLoading={isLoading}
             isError={isError}
             error={error}
             customers={customers}
-            handleSelectRow={handleSelectRow}
-            shouldActive={shouldActive}
+            handleSelectRow={selectRow}
+            shouldActive={isActive}
           />
         </Table>
       </div>
@@ -183,33 +122,12 @@ export default function Home() {
             Previous
           </button>
 
-          {paginationRange.map((page, index) => {
-            if (page === "...") {
-              return (
-                <span
-                  key={`ellipsis-${index}`}
-                  className="px-3 py-1 text-sm text-gray-500"
-                >
-                  ...
-                </span>
-              );
-            }
-
-            return (
-              <button
-                key={page}
-                className={`px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed ${
-                  currentPage === page
-                    ? "bg-blue-500 text-white hover:bg-blue-600"
-                    : ""
-                }`}
-                onClick={() => handlePageChange(page as number)}
-                disabled={isLoading}
-              >
-                {page}
-              </button>
-            );
-          })}
+          <Pagnation
+            paginationRange={paginationRange}
+            currentPage={currentPage}
+            handlePageChange={handlePageChange}
+            isLoading={isLoading}
+          />
 
           <button
             className="px-3 py-1 text-sm border rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -220,6 +138,9 @@ export default function Home() {
           </button>
         </div>
       </div>
+      <Button onClick={handleGetData} className="float-right ">
+        Get data
+      </Button>
     </div>
   );
 }
