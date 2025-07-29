@@ -88,6 +88,14 @@ export default function useDataTable<T>({
     };
   }, [isSelectAll, rowExclude, rowSelect]);
 
+  const selectingCount = useMemo(() => {
+    if (isSelectAll) {
+      return totalRecords - rowExclude.size;
+    }
+
+    return rowSelect.size;
+  }, [isSelectAll, rowSelect, rowExclude, totalRecords]);
+
   return {
     rowSelect,
     rowExclude,
@@ -96,5 +104,6 @@ export default function useDataTable<T>({
     isActive,
     selectStatus,
     getData,
+    selectingCount,
   };
 }

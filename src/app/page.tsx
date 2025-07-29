@@ -41,11 +41,17 @@ export default function Home() {
     staleTime: 5 * 60 * 1000,
   });
 
-  const { selectAll, selectRow, isActive, selectStatus, getData } =
-    useDataTable({
-      currentPageData: data?.data || [],
-      totalRecords: data?.totalCustomers || 0,
-    });
+  const {
+    selectAll,
+    selectRow,
+    isActive,
+    selectStatus,
+    getData,
+    selectingCount,
+  } = useDataTable({
+    currentPageData: data?.data || [],
+    totalRecords: data?.totalCustomers || 0,
+  });
 
   const handlePageChange = React.useCallback((page: number) => {
     setCurrentPage(page);
@@ -139,7 +145,7 @@ export default function Home() {
         </div>
       </div>
       <Button onClick={handleGetData} className="float-right ">
-        Get data
+        Get data {selectingCount} selected
       </Button>
     </div>
   );
